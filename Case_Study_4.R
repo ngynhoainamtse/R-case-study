@@ -48,34 +48,37 @@ simul_elec <- function(n, cas, B = 1000) {
 }
 
 
-# Define UI for the application that draws a histogram
+# Define UI for the application
 ui <- fluidPage(
-  # Application title
   titlePanel("Case Study 4"),
   
-  # Sidebar with input elements
   sidebarLayout(
     sidebarPanel(
       numericInput("Size", "Size of population:", value = 5),
       selectInput("Option", "Probabilistic Model:", choices = c("IC", "IAC_star")),
-      numericInput("Rep", "Number of replications:", value = 100000)
+      numericInput("Rep", "Number of replications:", value = 100000),
+      selectInput("PlotType", "Type of Output:", choices = c("Histogram", "Pie Chart", "Table"))
     ),
     
-    # Show a histogram plot
     mainPanel(
-      plotOutput("histogram", width = "500px", height = "300px")
+      uiOutput("dynamic_output")
     )
   )
 )
 
-# Define server logic required to generate histogram
 server <- function(input, output) {
   
+  output$dynamic_output <- renderUI({
+    switch(input$PlotType,
+           "Histogram" = plotOutput("histogram", width = "500px", height = "300px"),
+           "Pie Chart" = plotOutput("piechart", width = "500px", height = "300px"),
+           "Table" = tableOutput("table")
+    )
+  })
+  
   output$histogram <- renderPlot({
-    # Generate results using simul_elec
     res <- simul_elec(n = input$Size, cas = input$Option, B = input$Rep)
     
-    # Create a histogram using ggplot2
     data <- data.frame(Model = c("M1", "M2"), Probability = res)
     p <- ggplot(data, aes(x = Model, y = Probability, fill = Model)) +
       geom_bar(stat = "identity", position = "dodge", width = 0.3) +
@@ -85,11 +88,30 @@ server <- function(input, output) {
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 0, vjust = 0.2))
     
-    # Add a title to the plot
     p + ggtitle("Mechanism comparison")
   })
+  
+  output$piechart <- renderPlot({
+    res <- simul_elec(n = input$Size, cas = input$Option, B = input$Rep)
+    
+    data <- data.frame(Model = c("M1", "M2"), Probability = res)
+    p <- ggplot(data, aes(x="", y=Probability, fill=Model)) +
+      geom_bar(width=1, stat="identity") +
+      coord_polar(theta="y") +
+      xlab("") +
+      ylab("") +
+      labs(fill="Mechanism") +
+      theme_void()
+    
+    p + ggtitle("Mechanism comparison")
+  })
+  
+  output$table <- renderTable({
+    res <- simul_elec(n = input$Size, cas = input$Option, B = input$Rep)
+    
+    data.frame(Model=c("M1", "M2"), Probability=res)
+  })
 }
-
 # Run the application
 
 #HOLA
