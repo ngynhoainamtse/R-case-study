@@ -60,7 +60,7 @@ ui <- fluidPage(
         numericInput("Prob", "Probability:", value =0.5)
       ),
       numericInput("Rep", "Number of replications:", value =100000),
-      selectInput("PlotType", "Type of Output:", choices = c("Histogram", "Pie Chart", "Table"))
+      selectInput("PlotType", "Type of Output:", choices = c("Histogram", "Table"))
     ),
     
     mainPanel(
@@ -91,21 +91,6 @@ server <- function(input, output) {
       theme_minimal()+
       theme(axis.text.x=element_text(angle=0,vjust=0.2))+
       geom_text(aes(label=round(Probability, 2)), vjust=-0.3, color="black")
-    
-    p+ggtitle("Mechanism comparison")
-  })
-  
-  output$piechart <- renderPlot({
-    res <- simul_elec(n = input$Size, cas = input$Option, B = input$Rep, p=input$Prob)
-    
-    data <- data.frame(Model=c("M1","M2"), Probability=res)
-    p <- ggplot(data,aes(x="",y=Probability,fill=Model))+
-      geom_bar(width=1,stat="identity")+
-      coord_polar(theta="y")+
-      xlab("")+
-      ylab("")+
-      labs(fill="Mechanism")+
-      theme_void()
     
     p+ggtitle("Mechanism comparison")
   })
