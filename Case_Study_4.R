@@ -83,13 +83,14 @@ server <- function(input, output) {
     res <- simul_elec(n = input$Size, cas = input$Option, B = input$Rep, p=input$Prob)
     
     data <- data.frame(Model=c("M1","M2"), Probability=res)
-    p <- ggplot(data,aes(x=Model,y=Probability,fill=Model)) +
-      geom_bar(stat="identity",position="dodge",width=0.3)+
+    p <- ggplot(data,aes(x=Model,y=Probability)) +
+      geom_histogram(stat="identity",position="dodge")+
       xlab("Mechanism")+
       ylab("Probability")+
       labs(fill="Mechanism")+
       theme_minimal()+
-      theme(axis.text.x=element_text(angle=0,vjust=0.2))
+      theme(axis.text.x=element_text(angle=0,vjust=0.2))+
+      geom_text(aes(label=round(Probability, 2)), vjust=-0.3, color="black")
     
     p+ggtitle("Mechanism comparison")
   })
@@ -116,4 +117,5 @@ server <- function(input, output) {
   })
 }
 
-shinyApp(ui = ui, server = server)
+#HOLA
+shinyApp(ui = ui, server = server) # I add a comment here
