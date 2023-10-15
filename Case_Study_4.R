@@ -1,13 +1,13 @@
 library(shiny)
 library(ggplot2)
 
-processus <- function(n, cas, taille_popu = 3 * n) {
+processus <- function(n, cas, taille_popu = 3 * n, p=0.5) {
   # Initialize pivot variables
   pivot_M1 <- 0
   pivot_M2 <- 0
   
   # Simulation of the choice of voters
-  vec_etat <- switch(cas, IC = rbinom(3, n, 0.5), IAC_star = rbinom(3, n, runif(3)))
+  vec_etat <- switch(cas, IC = rbinom(3, n, p), IAC_star = rbinom(3, n, runif(3)))
   
   # Vainqueur de l'élection M1
   vote_popu <- sum(vec_etat)
@@ -33,30 +33,33 @@ processus <- function(n, cas, taille_popu = 3 * n) {
   return(c(pivot_M1 = pivot_M1, pivot_M2 = pivot_M2))
 }
 
-# The function that returns for each mechanism, the average percentage on the B simulations of people satisfied by the election
-simul_elec <- function(n, cas, B = 1000) {
+simul_elec <- function(n, cas, B = 1000, p=0.5) {
   
   # vérification
-  stopifnot(n %% 2 == 1, cas %in% c("IC", "IAC_star"))
+  stopifnot(n %% 2 == 1, cas %in% c("IC", "IAC_star"), p >=0, p <=1)
+  
   # initialisation: nombre total d'électeurs
   taille_popu <- 3 * n
   
   # réplication of the function processus()
-  res_simul <- replicate(B, processus(n = n, cas = cas, taille_popu = taille_popu))
+  res_simul <- replicate(B, processus(n = n, cas = cas, taille_popu = taille_popu, p=p))
+  
   # on retourne les résultats
   return(rowMeans(res_simul) / taille_popu)
 }
 
-
-# Define UI for the application
 ui <- fluidPage(
-  titlePanel("Case Study 4"),
+  titlePanel("Case Study"),
   
   sidebarLayout(
     sidebarPanel(
-      numericInput("Size", "Size of population:", value = 5),
+      numericInput("Size", "Size of population:", value =5),
       selectInput("Option", "Probabilistic Model:", choices = c("IC", "IAC_star")),
-      numericInput("Rep", "Number of replications:", value = 100000),
+      conditionalPanel(
+        condition = "input.Option == 'IC'",
+        numericInput("Prob", "Probability:", value =0.5)
+      ),
+      numericInput("Rep", "Number of replications:", value =100000),
       selectInput("PlotType", "Type of Output:", choices = c("Histogram", "Pie Chart", "Table"))
     ),
     
@@ -77,42 +80,40 @@ server <- function(input, output) {
   })
   
   output$histogram <- renderPlot({
-    res <- simul_elec(n = input$Size, cas = input$Option, B = input$Rep)
+    res <- simul_elec(n = input$Size, cas = input$Option, B = input$Rep, p=input$Prob)
     
-    data <- data.frame(Model = c("M1", "M2"), Probability = res)
-    p <- ggplot(data, aes(x = Model, y = Probability, fill = Model)) +
-      geom_bar(stat = "identity", position = "dodge", width = 0.3) +
-      xlab("Mechanism") +
-      ylab("Probability") +
-      labs(fill = "Mechanism") +
-      theme_minimal() +
-      theme(axis.text.x = element_text(angle = 0, vjust = 0.2))
+    data <- data.frame(Model=c("M1","M2"), Probability=res)
+    p <- ggplot(data,aes(x=Model,y=Probability,fill=Model)) +
+      geom_bar(stat="identity",position="dodge",width=0.3)+
+      xlab("Mechanism")+
+      ylab("Probability")+
+      labs(fill="Mechanism")+
+      theme_minimal()+
+      theme(axis.text.x=element_text(angle=0,vjust=0.2))
     
-    p + ggtitle("Mechanism comparison")
+    p+ggtitle("Mechanism comparison")
   })
   
   output$piechart <- renderPlot({
-    res <- simul_elec(n = input$Size, cas = input$Option, B = input$Rep)
+    res <- simul_elec(n = input$Size, cas = input$Option, B = input$Rep, p=input$Prob)
     
-    data <- data.frame(Model = c("M1", "M2"), Probability = res)
-    p <- ggplot(data, aes(x="", y=Probability, fill=Model)) +
-      geom_bar(width=1, stat="identity") +
-      coord_polar(theta="y") +
-      xlab("") +
-      ylab("") +
-      labs(fill="Mechanism") +
+    data <- data.frame(Model=c("M1","M2"), Probability=res)
+    p <- ggplot(data,aes(x="",y=Probability,fill=Model))+
+      geom_bar(width=1,stat="identity")+
+      coord_polar(theta="y")+
+      xlab("")+
+      ylab("")+
+      labs(fill="Mechanism")+
       theme_void()
     
-    p + ggtitle("Mechanism comparison")
+    p+ggtitle("Mechanism comparison")
   })
   
   output$table <- renderTable({
-    res <- simul_elec(n = input$Size, cas = input$Option, B = input$Rep)
+    res <- simul_elec(n = input$Size, cas = input$Option, B = input$Rep, p=input$Prob)
     
-    data.frame(Model=c("M1", "M2"), Probability=res)
+    data.frame(Model=c("M1","M2"), Probability=res)
   })
 }
-# Run the application
 
-#HOLA
-shinyApp(ui = ui, server = server) #I add a comment here
+shinyApp(ui = ui, server = server)
